@@ -22,10 +22,10 @@ import net.xeoh.plugins.base.annotations.PluginImplementation;
 
 @PluginImplementation
 @Log4j
-public class CDStarExportPlugin implements IStepPluginVersion2 {
+public class CDStarIngestPlugin implements IStepPluginVersion2 {
 
     @Getter
-    private String title = "intranda_step_cdstarExport";
+    private String title = "intranda_step_cdstarIngest";
 
     @Getter
     private PluginType type = PluginType.Step;
