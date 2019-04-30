@@ -5,13 +5,17 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
 >
     <modelVersion>4.0.0</modelVersion>
-    <groupId>de.intranda.goobi.plugins.export</groupId>
+    <groupId>de.intranda.goobi.plugins.step</groupId>
     <artifactId>cdstar-gui</artifactId>
     <parent>
-        <groupId>de.intranda.goobi.plugins.export</groupId>
+        <groupId>de.intranda.goobi.plugins.step</groupId>
         <artifactId>cdstar</artifactId>
         <version>${goobi.pluginversion}</version>
     </parent>
+         <properties>
+        <jar.name>plugin_intranda_step_cdstar-GUI</jar.name>
+        <dest.folder>/opt/digiverso/goobi/plugins/GUI/</dest.folder>
+    </properties>
     <repositories>
         <repository>
             <id>cdstar-public</id>
@@ -23,16 +27,43 @@
         </repository>
     </repositories>
     <build>
-        <finalName>${jar.name}-GUI</finalName>
+        <finalName>${jar.name}</finalName>
+        <sourceDirectory>../src</sourceDirectory>
         <resources>
             <resource>
                 <directory>../GUI</directory>
+            </resource>
+            <resource>
+                <directory>../src</directory>
                 <excludes>
                     <exclude>**/*.java</exclude>
                 </excludes>
+                <includes>
+                    <include>**/org/goobi/api/mq/ticket/*.class</include>
+                </includes>
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.7.0</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <excludes>
+                        <exclude>**/de/intranda/goobi/**/*.java</exclude>
+                    </excludes>
+                </configuration>
+                
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.12.4</version>
+                <configuration>
+                    <skipTests>true</skipTests>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -54,11 +85,13 @@
                                     <destFileName>${jar.name}.jar</destFileName>
                                 </artifactItem>
                             </artifactItems>
-                            <outputDirectory>${dest.folder.gui}</outputDirectory>
+                            <outputDirectory>${dest.folder}</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
+    
+  
 </project>

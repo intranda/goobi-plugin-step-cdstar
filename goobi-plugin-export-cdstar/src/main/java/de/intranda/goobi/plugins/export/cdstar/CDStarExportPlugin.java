@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import javax.jms.JMSException;
 
+import org.apache.commons.configuration.XMLConfiguration;
 import org.goobi.api.mq.TaskTicket;
 import org.goobi.api.mq.TicketGenerator;
 import org.goobi.beans.Step;
@@ -13,6 +14,7 @@ import org.goobi.production.enums.PluginType;
 import org.goobi.production.enums.StepReturnValue;
 import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
 
+import de.sub.goobi.config.ConfigPlugins;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j;
@@ -22,18 +24,12 @@ import net.xeoh.plugins.base.annotations.PluginImplementation;
 @Log4j
 public class CDStarExportPlugin implements IStepPluginVersion2 {
 
-    // TODO read configuration file
-    private static final String cdstarUrl = "http://127.0.0.1:9090/v3/";
-    private static final String vault = "demo";
-
-    private static final String user = "test";
-    private static final String password = "test";
-
     @Getter
     private String title = "intranda_step_cdstarExport";
 
     @Getter
     private PluginType type = PluginType.Step;
+
     @Getter
     @Setter
     private Step step;
@@ -82,6 +78,12 @@ public class CDStarExportPlugin implements IStepPluginVersion2 {
 
     @Override
     public PluginReturnValue run() {
+
+        XMLConfiguration xmlConfig = ConfigPlugins.getPluginConfig(title);
+        String cdstarUrl = xmlConfig.getString("url");
+        String vault = xmlConfig.getString("vault");
+        String user = xmlConfig.getString("user");
+        String password = xmlConfig.getString("password");
 
         TaskTicket ticket = TicketGenerator.generateSimpleTicket("CDStarUpload");
 
