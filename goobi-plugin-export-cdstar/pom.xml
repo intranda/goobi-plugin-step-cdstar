@@ -11,20 +11,15 @@
     <packaging>pom</packaging>
     <properties>
         <goobi.pluginversion>0.0.1-SNAPSHOT</goobi.pluginversion>
-        <dest.folder.main>/opt/digiverso/goobi/plugins/step/</dest.folder.main>
+        <dest.folder.main>/opt/digiverso/goobi/plugins/export/</dest.folder.main>
         <dest.folder.gui>/opt/digiverso/goobi/plugins/GUI/</dest.folder.gui>
-        <jar.name>plugin_intranda_step_example</jar.name>
+        <jar.name>plugin_intranda_export_cdstar</jar.name>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
     <url>http://maven.apache.org</url>
-
     <repositories>
-        <repository>
-            <id>cdstar-public</id>
-            <url>https://cdstar.gwdg.de/maven/</url>
-        </repository>
         <repository>
             <id>intranda</id>
             <url>https://nexus.intranda.com/repository/intranda</url>
@@ -43,11 +38,6 @@
             <artifactId>goobi-core-jar</artifactId>
             <version>[3.0.7-SNAPSHOT,)</version>
         </dependency>
-        <dependency>
-            <groupId>de.gwdg.cdstar</groupId>
-            <artifactId>cdstar-client</artifactId>
-            <version>3.0.0-SNAPSHOT</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/junit/junit -->
         <dependency>
             <groupId>junit</groupId>
@@ -57,7 +47,7 @@
         </dependency>
     </dependencies>
     <modules>
-        <module>module-gui</module>
+<!--         <module>module-gui</module> -->
         <module>module-main</module>
     </modules>
 </project>
