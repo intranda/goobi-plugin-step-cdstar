@@ -11,6 +11,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.lang.StringUtils;
 import org.goobi.api.mq.TaskTicket;
 import org.goobi.api.mq.TicketHandler;
 import org.goobi.beans.Process;
@@ -79,42 +80,24 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
         }
 
         // read exported file and create/overwrite filegroup for cdstar
-
         if (createAdditionalFileGroup(archiveurl, data, metsFile.toString())) {
             // close step
-            Step stepToClose = null;
+            String closeStepValue = ticket.getProperties().get("closeStep");
 
-            for (Step processStep : process.getSchritte()) {
-                if (processStep.getTitel().equals(ticket.getStepName())) {
-                    stepToClose = processStep;
-                    break;
+            if (StringUtils.isNotBlank(closeStepValue) && "true".equals(closeStepValue)) {
+                Step stepToClose = null;
+
+                for (Step processStep : process.getSchritte()) {
+                    if (processStep.getTitel().equals(ticket.getStepName())) {
+                        stepToClose = processStep;
+                        break;
+                    }
+                }
+                if (stepToClose != null) {
+                    new HelperSchritte().CloseStepObjectAutomatic(stepToClose);
                 }
             }
-            if (stepToClose != null) {
-                new HelperSchritte().CloseStepObjectAutomatic(stepToClose);
-            }
         }
-        //
-        //        System.out.println("***********************");
-        //        System.out.println(data.getProfile());
-        //        System.out.println(data.getState());
-        //        System.out.println(data.getCreated());
-        //        System.out.println(data.getModified());
-        //        System.out.println(data.getFile_count());
-        //        System.out.println(data.getOwner());
-        //
-        //        for (FileInformation info : data.getFiles()) {
-        //
-        //            System.out.println("*******");
-        //            System.out.println(archiveurl + "/" + info.getName());
-        //
-        //            System.out.println(info.getId());
-        //            System.out.println(info.getName());
-        //            System.out.println(info.getType());
-        //            System.out.println(info.getSize());
-        //            System.out.println(info.getCreated());
-        //            System.out.println(info.getModified());
-        //        }
 
         return PluginReturnValue.FINISH;
     }

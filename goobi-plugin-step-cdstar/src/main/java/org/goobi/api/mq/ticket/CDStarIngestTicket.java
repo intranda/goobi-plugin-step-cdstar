@@ -7,20 +7,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import javax.jms.JMSException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.lang.StringUtils;
 import org.goobi.api.mq.TaskTicket;
-import org.goobi.api.mq.TicketGenerator;
 import org.goobi.api.mq.TicketHandler;
 import org.goobi.beans.Process;
 import org.goobi.beans.Processproperty;
+import org.goobi.beans.Step;
 import org.goobi.production.enums.PluginReturnValue;
 
+import de.sub.goobi.helper.HelperSchritte;
 import de.sub.goobi.helper.StorageProvider;
 import de.sub.goobi.helper.enums.PropertyType;
 import de.sub.goobi.helper.exceptions.DAOException;
@@ -96,24 +97,39 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
                 return PluginReturnValue.ERROR;
             }
         }
+        String closeStepValue = ticket.getProperties().get("closeStep");
 
-        TaskTicket exportTicket = TicketGenerator.generateSimpleTicket("CDStarExport");
+        if (StringUtils.isNotBlank(closeStepValue) && "true".equals(closeStepValue)) {
+            Step stepToClose = null;
 
-        exportTicket.setProcessId(ticket.getProcessId());
-        exportTicket.setProcessName(ticket.getProcessName());
-
-        exportTicket.setStepId(ticket.getStepId());
-        exportTicket.setStepName(ticket.getStepName());
-
-        exportTicket.setProperties(ticket.getProperties());
-        exportTicket.getProperties().put("archiveurl", archiveBase.getUri().toASCIIString());
-
-        try {
-            TicketGenerator.submitTicket(exportTicket, false);
-        } catch (JMSException e) {
-            log.error(e);
-            return PluginReturnValue.ERROR;
+            for (Step processStep : process.getSchritte()) {
+                if (processStep.getTitel().equals(ticket.getStepName())) {
+                    stepToClose = processStep;
+                    break;
+                }
+            }
+            if (stepToClose != null) {
+                new HelperSchritte().CloseStepObjectAutomatic(stepToClose);
+            }
         }
+
+        //        TaskTicket exportTicket = TicketGenerator.generateSimpleTicket("CDStarExport");
+        //
+        //        exportTicket.setProcessId(ticket.getProcessId());
+        //        exportTicket.setProcessName(ticket.getProcessName());
+        //
+        //        exportTicket.setStepId(ticket.getStepId());
+        //        exportTicket.setStepName(ticket.getStepName());
+        //
+        //        exportTicket.setProperties(ticket.getProperties());
+        //        exportTicket.getProperties().put("archiveurl", archiveBase.getUri().toASCIIString());
+        //
+        //        try {
+        //            TicketGenerator.submitTicket(exportTicket, false);
+        //        } catch (JMSException e) {
+        //            log.error(e);
+        //            return PluginReturnValue.ERROR;
+        //        }
 
         return PluginReturnValue.FINISH;
     }

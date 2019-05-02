@@ -7,6 +7,7 @@ import javax.jms.JMSException;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.goobi.api.mq.TaskTicket;
 import org.goobi.api.mq.TicketGenerator;
+import org.goobi.beans.Processproperty;
 import org.goobi.beans.Step;
 import org.goobi.production.enums.PluginGuiType;
 import org.goobi.production.enums.PluginReturnValue;
@@ -17,15 +18,13 @@ import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
 import de.sub.goobi.config.ConfigPlugins;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.log4j.Log4j;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 
 @PluginImplementation
-@Log4j
-public class CDStarIngestPlugin implements IStepPluginVersion2 {
+public class CDStarExportPlugin implements IStepPluginVersion2 {
 
     @Getter
-    private String title = "intranda_step_cdstarIngest";
+    private String title = "intranda_step_cdstarExport";
 
     @Getter
     private PluginType type = PluginType.Step;
@@ -41,7 +40,6 @@ public class CDStarIngestPlugin implements IStepPluginVersion2 {
 
     @Override
     public boolean execute() {
-        run();
         return false;
     }
 
@@ -79,34 +77,43 @@ public class CDStarIngestPlugin implements IStepPluginVersion2 {
     @Override
     public PluginReturnValue run() {
 
-        XMLConfiguration xmlConfig = ConfigPlugins.getPluginConfig(title);
+        TaskTicket exportTicket = TicketGenerator.generateSimpleTicket("CDStarExport");
+
+        exportTicket.setProcessId(step.getProzess().getId());
+        exportTicket.setProcessName(step.getProzess().getTitel());
+
+        exportTicket.setStepId(step.getId());
+        exportTicket.setStepName(step.getTitel());
+
+        XMLConfiguration xmlConfig = ConfigPlugins.getPluginConfig("intranda_step_cdstarIngest");
         String cdstarUrl = xmlConfig.getString("url");
         String vault = xmlConfig.getString("vault");
         String user = xmlConfig.getString("user");
         String password = xmlConfig.getString("password");
 
-        TaskTicket ticket = TicketGenerator.generateSimpleTicket("CDStarUpload");
+        exportTicket.getProperties().put("userName", user);
+        exportTicket.getProperties().put("password", password);
 
-        ticket.setProcessId(step.getProzess().getId());
-        ticket.setProcessName(step.getProzess().getTitel());
+        exportTicket.getProperties().put("url", cdstarUrl);
+        exportTicket.getProperties().put("vault", vault);
 
-        ticket.setStepId(step.getId());
-        ticket.setStepName(step.getTitel());
+        exportTicket.getProperties().put("closeStep", "true");
 
-        ticket.getProperties().put("userName", user);
-        ticket.getProperties().put("password", password);
+        String archiveName = "";
+        for (Processproperty prop : step.getProzess().getEigenschaften()) {
+            if (prop.getTitel().equals("archive-id")) {
+                archiveName = prop.getWert();
+            }
+        }
 
-        ticket.getProperties().put("url", cdstarUrl);
-        ticket.getProperties().put("vault", vault);
-
-        ticket.getProperties().put("closeStep", "true");
+        exportTicket.getProperties().put("archiveurl", cdstarUrl + vault + "/" + archiveName);
 
         try {
-            TicketGenerator.submitTicket(ticket, false);
+            TicketGenerator.submitTicket(exportTicket, false);
         } catch (JMSException e) {
-            log.error(e);
             return PluginReturnValue.ERROR;
         }
+
         return PluginReturnValue.WAIT;
     }
 
