@@ -3,4 +3,6 @@
 	<vault>demo</vault>
 	<user>test</user>
 	<password>test</password>
+    
+    <fedoraUrl>https://c104-087.cloud.gwdg.de/api/containers/</fedoraUrl>
 </config_plugin>
