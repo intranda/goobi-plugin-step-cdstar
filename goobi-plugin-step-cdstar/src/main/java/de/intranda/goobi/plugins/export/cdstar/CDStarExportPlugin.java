@@ -40,6 +40,7 @@ public class CDStarExportPlugin implements IStepPluginVersion2 {
 
     @Override
     public boolean execute() {
+        run();
         return false;
     }
 

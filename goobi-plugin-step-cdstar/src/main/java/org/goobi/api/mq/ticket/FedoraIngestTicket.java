@@ -19,20 +19,25 @@ import org.goobi.beans.Processproperty;
 import org.goobi.beans.Step;
 import org.goobi.production.enums.PluginReturnValue;
 
-import de.sub.goobi.helper.HelperSchritte;
+import de.sub.goobi.helper.CloseStepHelper;
 import de.sub.goobi.helper.enums.PropertyType;
 import de.sub.goobi.persistence.managers.ProcessManager;
 import de.sub.goobi.persistence.managers.PropertyManager;
+import lombok.extern.log4j.Log4j;
 
-
+@Log4j
 public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
 
     @Override
     public PluginReturnValue call(TaskTicket ticket) {
 
+        log.info("got fedora ticket for " + ticket.getProcessName());
+
         String fedoraUrl = ticket.getProperties().get("fedoraUrl");
 
         String metsfile = ticket.getProperties().get("metsfile");
+
+        log.info("mets file to upload is " + metsfile);
 
         Integer processId = ticket.getProcessId();
 
@@ -43,13 +48,21 @@ public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
         client.register(MultiPartFeature.class);
 
         client.register(MultiPartFeature.class);
+        FedoraIngestInformation resp = null;
+        try {
+            FormDataMultiPart multiPart = new FormDataMultiPart();
+            FileDataBodyPart fileDataBodyPart = new FileDataBodyPart("resource", new File(metsfile), MediaType.TEXT_XML_TYPE);
+            multiPart.bodyPart(fileDataBodyPart);
+            WebTarget fedoraBase = client.target(fedoraUrl);
+            resp = fedoraBase.request("application/json;charset=UTF-8").post(Entity.entity(multiPart, multiPart.getMediaType()),
+                    FedoraIngestInformation.class);
+        } catch (Exception e) {
+            log.error(e);
+            return PluginReturnValue.ERROR;
 
-        FormDataMultiPart multiPart = new FormDataMultiPart();
-        FileDataBodyPart fileDataBodyPart = new FileDataBodyPart("resource", new File(metsfile), MediaType.TEXT_XML_TYPE);
-        multiPart.bodyPart(fileDataBodyPart);
-        WebTarget fedoraBase = client.target(fedoraUrl);
-        FedoraIngestInformation resp = fedoraBase.request("application/json;charset=UTF-8").post(Entity.entity(multiPart, multiPart.getMediaType()),
-                FedoraIngestInformation.class);
+        }
+
+        log.debug("uploaded to " + resp.getUrl());
 
         // save pid and url as properties
 
@@ -69,6 +82,8 @@ public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
         urlProperty.setWert(resp.getUrl());
         PropertyManager.saveProcessProperty(urlProperty);
 
+        log.debug("saved properties");
+
         // close step
         String closeStepValue = ticket.getProperties().get("closeStep");
 
@@ -82,7 +97,7 @@ public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
                 }
             }
             if (stepToClose != null) {
-                new HelperSchritte().CloseStepObjectAutomatic(stepToClose);
+                CloseStepHelper.closeStep(stepToClose, null);
             }
         }
         return PluginReturnValue.FINISH;

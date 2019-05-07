@@ -27,8 +27,8 @@ import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 
 import de.sub.goobi.export.dms.ExportDms;
+import de.sub.goobi.helper.CloseStepHelper;
 import de.sub.goobi.helper.Helper;
-import de.sub.goobi.helper.HelperSchritte;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.ExportFileException;
 import de.sub.goobi.helper.exceptions.SwapException;
@@ -94,7 +94,7 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
                     }
                 }
                 if (stepToClose != null) {
-                    new HelperSchritte().CloseStepObjectAutomatic(stepToClose);
+                    CloseStepHelper.closeStep(stepToClose, null);
                 }
             }
         }

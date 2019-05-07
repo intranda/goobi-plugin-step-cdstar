@@ -41,11 +41,13 @@ public class FedoraIngestPlugin implements IStepPluginVersion2 {
 
     @Override
     public boolean execute() {
+        run();
         return false;
     }
 
     @Override
     public String finish() {
+
         return null;
     }
 

@@ -21,7 +21,7 @@ import org.goobi.beans.Processproperty;
 import org.goobi.beans.Step;
 import org.goobi.production.enums.PluginReturnValue;
 
-import de.sub.goobi.helper.HelperSchritte;
+import de.sub.goobi.helper.CloseStepHelper;
 import de.sub.goobi.helper.StorageProvider;
 import de.sub.goobi.helper.enums.PropertyType;
 import de.sub.goobi.helper.exceptions.DAOException;
@@ -109,7 +109,7 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
                 }
             }
             if (stepToClose != null) {
-                new HelperSchritte().CloseStepObjectAutomatic(stepToClose);
+                CloseStepHelper.closeStep(stepToClose, null);
             }
         }
 
