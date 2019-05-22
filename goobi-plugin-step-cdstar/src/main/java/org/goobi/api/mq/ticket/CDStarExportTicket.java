@@ -4,6 +4,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.client.Client;
@@ -57,7 +58,8 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
         Client client = ClientBuilder.newClient().register(new BasicAuthenticator(userName, password));
 
         WebTarget archiveBase = client.target(archiveurl);
-        ArchiveInformation data = archiveBase.queryParam("with", "files").request(MediaType.APPLICATION_JSON).get(ArchiveInformation.class);
+        ArchiveInformation data = archiveBase.queryParam("with", "files").queryParam("limit", "99999").request(MediaType.APPLICATION_JSON).get(
+                ArchiveInformation.class);
 
         // export process
         Process process = ProcessManager.getProcessById(ticket.getProcessId());
@@ -80,7 +82,7 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
         }
 
         // read exported file and create/overwrite filegroup for cdstar
-        if (createAdditionalFileGroup(archiveurl, data, metsFile.toString())) {
+        if (createAdditionalFileGroups(archiveurl, data, metsFile.toString())) {
             // close step
             String closeStepValue = ticket.getProperties().get("closeStep");
 
@@ -102,7 +104,18 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
         return PluginReturnValue.FINISH;
     }
 
-    private boolean createAdditionalFileGroup(String archiveurl, ArchiveInformation data, String metsFilename) {
+    private boolean createAdditionalFileGroups(String archiveurl, ArchiveInformation data, String metsFilename) {
+        List<FileInformation> master = new ArrayList<>();
+        List<FileInformation> derivates = new ArrayList<>();
+
+        for (FileInformation fi : data.getFiles()) {
+            if (fi.getName().contains("/master/")) {
+                master.add(fi);
+            } else {
+                derivates.add(fi);
+            }
+        }
+
         SAXBuilder parser = new SAXBuilder();
         Document metsDoc = null;
         try {
@@ -122,11 +135,25 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
                 for (int i = 0; i < metsFiles.size(); i++) {
                     Element file = metsFiles.get(i);
 
-                    file.setAttribute("MIMETYPE", data.getFiles().get(i).getType());
+                    file.setAttribute("MIMETYPE", master.get(i).getType());
 
                     Element flocat = file.getChild("FLocat", metsNamespace);
                     Attribute href = flocat.getAttribute("href", xlink);
-                    href.setValue(archiveurl + "/" + data.getFiles().get(i).getName());
+                    href.setValue(archiveurl + "/" + master.get(i).getName());
+                }
+            }
+
+            // TODO
+            else if (filegroup.getAttributeValue("USE").equals("DERIVATE")) {
+                List<Element> metsFiles = filegroup.getChildren("file", metsNamespace);
+                for (int i = 0; i < metsFiles.size(); i++) {
+                    Element file = metsFiles.get(i);
+
+                    file.setAttribute("MIMETYPE", derivates.get(i).getType());
+
+                    Element flocat = file.getChild("FLocat", metsNamespace);
+                    Attribute href = flocat.getAttribute("href", xlink);
+                    href.setValue(archiveurl + "/" + derivates.get(i).getName());
                 }
             }
         }
@@ -145,7 +172,9 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
                     List<Element> fptrList = div.getChildren("fptr", metsNamespace);
                     for (Element fptr : fptrList) {
                         if (fptr.getAttributeValue("FILEID").contains("CDSTAR")) {
-                            fptr.setAttribute("CONTENTIDS", data.getFiles().get(i).getId());
+                            fptr.setAttribute("CONTENTIDS", master.get(i).getId());
+                        } else if (fptr.getAttributeValue("FILEID").contains("DERIVATE")) {
+                            fptr.setAttribute("CONTENTIDS", derivates.get(i).getId());
                         }
                     }
                 }

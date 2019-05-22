@@ -69,10 +69,10 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
         processproperty.setWert(resp.getId());
         PropertyManager.saveProcessProperty(processproperty);
 
-        // upload images
-        List<Path> imageFiles = null;
+        // upload master images
+        List<Path> masterFiles = null;
         try {
-            imageFiles = StorageProvider.getInstance().listFiles(process.getImagesOrigDirectory(false));
+            masterFiles = StorageProvider.getInstance().listFiles(process.getImagesOrigDirectory(false));
         } catch (IOException | InterruptedException | SwapException | DAOException e1) {
             log.error(e1);
             return PluginReturnValue.ERROR;
@@ -80,7 +80,7 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
 
         WebTarget masterTarget = archiveBase.path("" + processId).path("master");
 
-        for (Path p : imageFiles) {
+        for (Path p : masterFiles) {
             log.debug("upload file " + p.toString());
             WebTarget imageTarget = masterTarget.path(p.getFileName().toString());
 
@@ -97,6 +97,37 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
                 return PluginReturnValue.ERROR;
             }
         }
+
+        // upload derivate images
+        List<Path> derivateFiles = null;
+        try {
+            derivateFiles = StorageProvider.getInstance().listFiles(process.getImagesTifDirectory(false));
+        } catch (IOException | InterruptedException | SwapException | DAOException e1) {
+            log.error(e1);
+            return PluginReturnValue.ERROR;
+        }
+
+        WebTarget derivateTarget = archiveBase.path("" + processId).path("derivate");
+
+        for (Path p : derivateFiles) {
+            log.debug("upload file " + p.toString());
+            WebTarget imageTarget = derivateTarget.path(p.getFileName().toString());
+
+            InputStream imageFile;
+            try {
+                imageFile = new FileInputStream(p.toFile());
+
+                String mimeType = Files.probeContentType(p);
+
+                imageTarget.request(MediaType.APPLICATION_JSON).put(Entity.entity(imageFile, mimeType), FileInformation.class);
+
+            } catch (IOException e) {
+                log.error(e);
+                return PluginReturnValue.ERROR;
+            }
+        }
+
+
         String closeStepValue = ticket.getProperties().get("closeStep");
 
         if (StringUtils.isNotBlank(closeStepValue) && "true".equals(closeStepValue)) {
