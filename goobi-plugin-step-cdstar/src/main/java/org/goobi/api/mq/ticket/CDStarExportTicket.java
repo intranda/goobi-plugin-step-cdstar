@@ -58,8 +58,26 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
         Client client = ClientBuilder.newClient().register(new BasicAuthenticator(userName, password));
 
         WebTarget archiveBase = client.target(archiveurl);
-        ArchiveInformation data = archiveBase.queryParam("with", "files").queryParam("limit", "99999").request(MediaType.APPLICATION_JSON).get(
-                ArchiveInformation.class);
+        ArchiveInformation data =
+                archiveBase.queryParam("with", "files").queryParam("limit", "1000").request(MediaType.APPLICATION_JSON).get(ArchiveInformation.class);
+        int position = 1000;
+
+        boolean filesFound = true;
+        while (filesFound) {
+
+            ArchiveInformation sublist = archiveBase.queryParam("with", "files")
+                    .queryParam("limit", "1000")
+                    .queryParam("offset", position)
+                    .request(MediaType.APPLICATION_JSON)
+                    .get(ArchiveInformation.class);
+            List<FileInformation> additionalFiles = sublist.getFiles();
+            if (additionalFiles == null || additionalFiles.isEmpty()) {
+                filesFound = false;
+            } else {
+                data.getFiles().addAll(additionalFiles);
+                position = position + 1000;
+            }
+        }
 
         // export process
         Process process = ProcessManager.getProcessById(ticket.getProcessId());
