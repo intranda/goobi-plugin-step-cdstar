@@ -2,10 +2,9 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.intranda.goobi.plugins.step</groupId>
     <artifactId>cdstar</artifactId>
-    <version>${goobi.pluginversion}</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
     <properties>
-        <goobi.pluginversion>0.0.1-SNAPSHOT</goobi.pluginversion>
         <dest.folder.main>/opt/digiverso/goobi/plugins/step/</dest.folder.main>
         <dest.folder.gui>/opt/digiverso/goobi/plugins/GUI/</dest.folder.gui>
         <jar.name>plugin_intranda_step_cdstar</jar.name>

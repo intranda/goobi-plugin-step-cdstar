@@ -5,7 +5,7 @@
     <parent>
         <groupId>de.intranda.goobi.plugins.step</groupId>
         <artifactId>cdstar</artifactId>
-        <version>${goobi.pluginversion}</version>
+        <version>1.0.0</version>
     </parent>
          <properties>
         <jar.name>plugin_intranda_step_cdstar-GUI</jar.name>
@@ -58,32 +58,6 @@
                 <configuration>
                     <skipTests>true</skipTests>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>2.8</version>
-                <executions>
-                    <execution>
-                        <id>copy-installed</id>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>${project.groupId}</groupId>
-                                    <artifactId>${project.artifactId}</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>${project.packaging}</type>
-                                    <destFileName>${jar.name}.jar</destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                            <outputDirectory>${dest.folder}</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         <plugin>
 				<groupId>org.codehaus.mojo</groupId>
