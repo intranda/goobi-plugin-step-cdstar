@@ -16,6 +16,7 @@ import org.apache.commons.lang.StringUtils;
 import org.goobi.api.mq.TaskTicket;
 import org.goobi.api.mq.TicketHandler;
 import org.goobi.beans.Process;
+import org.goobi.beans.Project;
 import org.goobi.beans.Step;
 import org.goobi.production.enums.PluginReturnValue;
 import org.jdom2.Attribute;
@@ -81,10 +82,13 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
 
         // export process
         Process process = ProcessManager.getProcessById(ticket.getProcessId());
+        String exportFolder = "/opt/gigiverso/goobi/export/";
+        Project project = process.getProjekt();
+        project.setUseDmsImport(false);
 
         try {
             exportWithImages = false;
-            startExport(process, process.getProjekt().getDmsImportImagesPath());
+            startExport(process, exportFolder);
         } catch (WriteException | PreferencesException | DocStructHasNoTypeException | MetadataTypeNotAllowedException
                 | TypeNotAllowedForParentException | IOException | InterruptedException | ExportFileException | UghHelperException | SwapException
                 | DAOException e) {
@@ -93,10 +97,10 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
         }
 
         Path metsFile = null;
-        if (process.getProjekt().isDmsImportCreateProcessFolder()) {
-            metsFile = Paths.get(process.getProjekt().getDmsImportImagesPath(), process.getTitel(), process.getTitel() + ".xml");
+        if (project.isDmsImportCreateProcessFolder()) {
+            metsFile = Paths.get(exportFolder, process.getTitel(), process.getTitel() + ".xml");
         } else {
-            metsFile = Paths.get(process.getProjekt().getDmsImportImagesPath(), process.getTitel() + ".xml");
+            metsFile = Paths.get(exportFolder, process.getTitel() + ".xml");
         }
 
         // read exported file and create/overwrite filegroup for cdstar
