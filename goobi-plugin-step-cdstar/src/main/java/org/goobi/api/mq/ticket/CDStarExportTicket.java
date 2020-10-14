@@ -130,9 +130,19 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
         List<FileInformation> master = new ArrayList<>();
         List<FileInformation> derivates = new ArrayList<>();
 
+        List<FileInformation> alto = new ArrayList<>();
+        List<FileInformation> pdf = new ArrayList<>();
+        List<FileInformation> txt = new ArrayList<>();
+
         for (FileInformation fi : data.getFiles()) {
             if (fi.getName().contains("/master/")) {
                 master.add(fi);
+            } else if (fi.getName().contains("/ocr/") && fi.getName().endsWith(".pdf")) {
+                pdf.add(fi);
+            } else if (fi.getName().contains("/ocr/") && fi.getName().endsWith(".txt")) {
+                txt.add(fi);
+            } else if (fi.getName().contains("/ocr/") && fi.getName().endsWith(".xml")) {
+                alto.add(fi);
             } else {
                 derivates.add(fi);
             }
@@ -153,30 +163,15 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
         List<Element> filegroups = fileSec.getChildren("fileGrp", metsNamespace);
         for (Element filegroup : filegroups) {
             if (filegroup.getAttributeValue("USE").equals("CDSTAR")) {
-                List<Element> metsFiles = filegroup.getChildren("file", metsNamespace);
-                for (int i = 0; i < metsFiles.size(); i++) {
-                    Element file = metsFiles.get(i);
-
-                    file.setAttribute("MIMETYPE", master.get(i).getType());
-
-                    Element flocat = file.getChild("FLocat", metsNamespace);
-                    Attribute href = flocat.getAttribute("href", xlink);
-                    href.setValue(archiveurl + "/" + master.get(i).getName());
-                }
-            }
-
-            // TODO
-            else if (filegroup.getAttributeValue("USE").equals("DERIVATE")) {
-                List<Element> metsFiles = filegroup.getChildren("file", metsNamespace);
-                for (int i = 0; i < metsFiles.size(); i++) {
-                    Element file = metsFiles.get(i);
-
-                    file.setAttribute("MIMETYPE", derivates.get(i).getType());
-
-                    Element flocat = file.getChild("FLocat", metsNamespace);
-                    Attribute href = flocat.getAttribute("href", xlink);
-                    href.setValue(archiveurl + "/" + derivates.get(i).getName());
-                }
+                generateFileGroup(archiveurl, master, filegroup);
+            } else if (filegroup.getAttributeValue("USE").equals("DERIVATE")) {
+                generateFileGroup(archiveurl, derivates, filegroup);
+            } else if (filegroup.getAttributeValue("USE").equals("ALTO")) {
+                generateFileGroup(archiveurl, alto, filegroup);
+            } else if (filegroup.getAttributeValue("USE").equals("PDF")) {
+                generateFileGroup(archiveurl, pdf, filegroup);
+            } else if (filegroup.getAttributeValue("USE").equals("TXT")) {
+                generateFileGroup(archiveurl, txt, filegroup);
             }
         }
 
@@ -197,6 +192,12 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
                             fptr.setAttribute("CONTENTIDS", master.get(i).getId());
                         } else if (fptr.getAttributeValue("FILEID").contains("DERIVATE")) {
                             fptr.setAttribute("CONTENTIDS", derivates.get(i).getId());
+                        } else if (fptr.getAttributeValue("FILEID").contains("ALTO")) {
+                            fptr.setAttribute("CONTENTIDS", alto.get(i).getId());
+                        } else if (fptr.getAttributeValue("FILEID").contains("TXT")) {
+                            fptr.setAttribute("CONTENTIDS", txt.get(i).getId());
+                        } else if (fptr.getAttributeValue("FILEID").contains("PDF")) {
+                            fptr.setAttribute("CONTENTIDS", pdf.get(i).getId());
                         }
                     }
                 }
@@ -212,6 +213,19 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
             return false;
         }
         return true;
+    }
+
+    private void generateFileGroup(String archiveurl, List<FileInformation> master, Element filegroup) {
+        List<Element> metsFiles = filegroup.getChildren("file", metsNamespace);
+        for (int i = 0; i < metsFiles.size(); i++) {
+            Element file = metsFiles.get(i);
+
+            file.setAttribute("MIMETYPE", master.get(i).getType());
+
+            Element flocat = file.getChild("FLocat", metsNamespace);
+            Attribute href = flocat.getAttribute("href", xlink);
+            href.setValue(archiveurl + "/" + master.get(i).getName());
+        }
     }
 
     @Override

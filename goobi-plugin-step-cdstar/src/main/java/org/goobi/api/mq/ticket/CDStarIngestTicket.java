@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import javax.ws.rs.client.Client;
@@ -127,6 +128,86 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
             }
         }
 
+        List<Path> ocrTxtFiles = null;
+        List<Path> ocrAltoFiles = null;
+        List<Path> ocrPdfFiles = null;
+        try {
+            if (StorageProvider.getInstance().isDirectory(Paths.get(process.getOcrTxtDirectory()))) {
+                ocrTxtFiles = StorageProvider.getInstance().listFiles(process.getOcrTxtDirectory());
+            }
+            if (StorageProvider.getInstance().isDirectory(Paths.get(process.getOcrAltoDirectory()))) {
+                ocrAltoFiles = StorageProvider.getInstance().listFiles(process.getOcrAltoDirectory());
+            }
+            if (StorageProvider.getInstance().isDirectory(Paths.get(process.getOcrPdfDirectory()))) {
+                ocrPdfFiles = StorageProvider.getInstance().listFiles(process.getOcrPdfDirectory());
+            }
+
+        } catch (IOException | InterruptedException | SwapException | DAOException e1) {
+            log.error(e1);
+            return PluginReturnValue.ERROR;
+        }
+
+        WebTarget ocrTarget = archiveBase.path("" + processId).path("ocr");
+
+
+        if (ocrTxtFiles!= null) {
+            for (Path p : ocrTxtFiles) {
+                log.debug("upload file " + p.toString());
+                WebTarget imageTarget = ocrTarget.path(p.getFileName().toString());
+
+                InputStream imageFile;
+                try {
+                    imageFile = new FileInputStream(p.toFile());
+
+                    String mimeType = Files.probeContentType(p);
+
+                    imageTarget.request(MediaType.APPLICATION_JSON).put(Entity.entity(imageFile, mimeType), FileInformation.class);
+
+                } catch (IOException e) {
+                    log.error(e);
+                    return PluginReturnValue.ERROR;
+                }
+            }
+        }
+        if (ocrAltoFiles!= null) {
+            for (Path p : ocrAltoFiles) {
+                log.debug("upload file " + p.toString());
+                WebTarget imageTarget = ocrTarget.path(p.getFileName().toString());
+
+                InputStream imageFile;
+                try {
+                    imageFile = new FileInputStream(p.toFile());
+
+                    String mimeType = Files.probeContentType(p);
+
+                    imageTarget.request(MediaType.APPLICATION_JSON).put(Entity.entity(imageFile, mimeType), FileInformation.class);
+
+                } catch (IOException e) {
+                    log.error(e);
+                    return PluginReturnValue.ERROR;
+                }
+            }
+        }
+
+        if (ocrPdfFiles!= null) {
+            for (Path p : ocrPdfFiles) {
+                log.debug("upload file " + p.toString());
+                WebTarget imageTarget = ocrTarget.path(p.getFileName().toString());
+
+                InputStream imageFile;
+                try {
+                    imageFile = new FileInputStream(p.toFile());
+
+                    String mimeType = Files.probeContentType(p);
+
+                    imageTarget.request(MediaType.APPLICATION_JSON).put(Entity.entity(imageFile, mimeType), FileInformation.class);
+
+                } catch (IOException e) {
+                    log.error(e);
+                    return PluginReturnValue.ERROR;
+                }
+            }
+        }
 
         String closeStepValue = ticket.getProperties().get("closeStep");
 

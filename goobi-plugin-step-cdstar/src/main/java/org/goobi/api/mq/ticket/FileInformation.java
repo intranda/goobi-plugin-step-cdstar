@@ -15,6 +15,5 @@ public class FileInformation {
     private String created;
     private String modified;
 
-    private Map<String, String> digests = new HashMap<String, String>();
-
+    private Map<String, String> digests = new HashMap<>();
 }
