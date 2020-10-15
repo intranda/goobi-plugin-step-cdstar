@@ -82,9 +82,11 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
 
         // export process
         Process process = ProcessManager.getProcessById(ticket.getProcessId());
-        String exportFolder = "/opt/gigiverso/goobi/export/";
+
         Project project = process.getProjekt();
-        project.setUseDmsImport(false);
+        String exportFolder = project.getDmsImportRootPath();
+        project.setDmsImportRootPath(exportFolder);
+        project.setDmsImportCreateProcessFolder(true);
 
         try {
             exportWithImages = false;

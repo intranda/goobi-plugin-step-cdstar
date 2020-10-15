@@ -103,14 +103,11 @@ public class FedoraIngestPlugin implements IStepPluginVersion2 {
         String fedoraUrl = xmlConfig.getString("fedoraUrl");
         exportTicket.getProperties().put("fedoraUrl", fedoraUrl);
         exportTicket.getProperties().put("closeStep", "true");
-        String exportFolder = "/opt/gigiverso/goobi/export/";
+
+        String exportFolder = step.getProzess().getProjekt().getDmsImportRootPath();
+
         Path metsFile = null;
-        if (step.getProzess().getProjekt().isDmsImportCreateProcessFolder()) {
-            metsFile = Paths.get(exportFolder, step.getProzess().getTitel(), step.getProzess().getTitel()
-                    + ".xml");
-        } else {
-            metsFile = Paths.get(exportFolder, step.getProzess().getTitel() + ".xml");
-        }
+        metsFile = Paths.get(exportFolder, step.getProzess().getTitel(), step.getProzess().getTitel() + ".xml");
 
         exportTicket.getProperties().put("metsfile", metsFile.toString());
 
