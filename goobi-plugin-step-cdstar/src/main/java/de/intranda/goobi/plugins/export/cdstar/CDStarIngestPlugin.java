@@ -5,6 +5,7 @@ import java.util.HashMap;
 import javax.jms.JMSException;
 
 import org.apache.commons.configuration.XMLConfiguration;
+import org.goobi.api.mq.QueueType;
 import org.goobi.api.mq.TaskTicket;
 import org.goobi.api.mq.TicketGenerator;
 import org.goobi.beans.Step;
@@ -102,7 +103,7 @@ public class CDStarIngestPlugin implements IStepPluginVersion2 {
         ticket.getProperties().put("closeStep", "true");
 
         try {
-            TicketGenerator.submitTicket(ticket, false);
+            TicketGenerator.submitInternalTicket(ticket, QueueType.SLOW_QUEUE, "cdstaringest", step.getProcessId());
         } catch (JMSException e) {
             log.error(e);
             return PluginReturnValue.ERROR;

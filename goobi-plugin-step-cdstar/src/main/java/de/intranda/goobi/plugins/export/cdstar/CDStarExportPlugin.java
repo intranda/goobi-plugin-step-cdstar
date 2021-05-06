@@ -5,6 +5,7 @@ import java.util.HashMap;
 import javax.jms.JMSException;
 
 import org.apache.commons.configuration.XMLConfiguration;
+import org.goobi.api.mq.QueueType;
 import org.goobi.api.mq.TaskTicket;
 import org.goobi.api.mq.TicketGenerator;
 import org.goobi.beans.Processproperty;
@@ -110,7 +111,7 @@ public class CDStarExportPlugin implements IStepPluginVersion2 {
         exportTicket.getProperties().put("archiveurl", cdstarUrl + vault + "/" + archiveName);
 
         try {
-            TicketGenerator.submitTicket(exportTicket, false);
+            TicketGenerator.submitInternalTicket(exportTicket, QueueType.SLOW_QUEUE, "cdstarexport", step.getProcessId());
         } catch (JMSException e) {
             return PluginReturnValue.ERROR;
         }
