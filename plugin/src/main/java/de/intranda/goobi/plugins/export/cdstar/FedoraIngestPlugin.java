@@ -6,7 +6,7 @@ import java.util.HashMap;
 
 import javax.jms.JMSException;
 
-import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.SubnodeConfiguration;
 import org.goobi.api.mq.QueueType;
 import org.goobi.api.mq.TaskTicket;
 import org.goobi.api.mq.TicketGenerator;
@@ -89,7 +89,7 @@ public class FedoraIngestPlugin implements IStepPluginVersion2 {
         exportTicket.setStepId(step.getId());
         exportTicket.setStepName(step.getTitel());
 
-        XMLConfiguration xmlConfig = ConfigPlugins.getPluginConfig("intranda_step_cdstarIngest");
+        SubnodeConfiguration xmlConfig = ConfigPlugins.getProjectAndStepConfig("intranda_step_cdstarIngest", step);
         //        String cdstarUrl = xmlConfig.getString("url");
         //        String vault = xmlConfig.getString("vault");
         //        String user = xmlConfig.getString("user");

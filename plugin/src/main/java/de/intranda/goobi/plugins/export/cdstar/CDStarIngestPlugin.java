@@ -4,7 +4,7 @@ import java.util.HashMap;
 
 import javax.jms.JMSException;
 
-import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.SubnodeConfiguration;
 import org.goobi.api.mq.QueueType;
 import org.goobi.api.mq.TaskTicket;
 import org.goobi.api.mq.TicketGenerator;
@@ -80,7 +80,8 @@ public class CDStarIngestPlugin implements IStepPluginVersion2 {
     @Override
     public PluginReturnValue run() {
 
-        XMLConfiguration xmlConfig = ConfigPlugins.getPluginConfig(title);
+        SubnodeConfiguration xmlConfig = ConfigPlugins.getProjectAndStepConfig(title, step);
+
         String cdstarUrl = xmlConfig.getString("url");
         String vault = xmlConfig.getString("vault");
         String user = xmlConfig.getString("user");
