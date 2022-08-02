@@ -74,7 +74,7 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
         List<Path> masterFiles = null;
         try {
             masterFiles = StorageProvider.getInstance().listFiles(process.getImagesOrigDirectory(false));
-        } catch (IOException | InterruptedException | SwapException | DAOException e1) {
+        } catch (IOException | SwapException | DAOException e1) {
             log.error(e1);
             return PluginReturnValue.ERROR;
         }
@@ -103,7 +103,7 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
         List<Path> derivateFiles = null;
         try {
             derivateFiles = StorageProvider.getInstance().listFiles(process.getImagesTifDirectory(false));
-        } catch (IOException | InterruptedException | SwapException | DAOException e1) {
+        } catch (IOException | SwapException e1) {
             log.error(e1);
             return PluginReturnValue.ERROR;
         }
@@ -142,7 +142,7 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
                 ocrPdfFiles = StorageProvider.getInstance().listFiles(process.getOcrPdfDirectory());
             }
 
-        } catch (IOException | InterruptedException | SwapException | DAOException e1) {
+        } catch (IOException | SwapException e1) {
             log.error(e1);
             return PluginReturnValue.ERROR;
         }
