@@ -66,7 +66,7 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
         processproperty.setProcessId(process.getId());
         processproperty.setProzess(process);
         processproperty.setTitel("archive-id");
-        processproperty.setType(PropertyType.general);
+        processproperty.setType(PropertyType.GENERAL);
         processproperty.setWert(resp.getId());
         PropertyManager.saveProcessProperty(processproperty);
 
@@ -149,8 +149,7 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
 
         WebTarget ocrTarget = archiveBase.path("" + processId).path("ocr");
 
-
-        if (ocrTxtFiles!= null) {
+        if (ocrTxtFiles != null) {
             for (Path p : ocrTxtFiles) {
                 log.debug("upload file " + p.toString());
                 WebTarget imageTarget = ocrTarget.path(p.getFileName().toString());
@@ -169,7 +168,7 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
                 }
             }
         }
-        if (ocrAltoFiles!= null) {
+        if (ocrAltoFiles != null) {
             for (Path p : ocrAltoFiles) {
                 log.debug("upload file " + p.toString());
                 WebTarget imageTarget = ocrTarget.path(p.getFileName().toString());
@@ -189,7 +188,7 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
             }
         }
 
-        if (ocrPdfFiles!= null) {
+        if (ocrPdfFiles != null) {
             for (Path p : ocrPdfFiles) {
                 log.debug("upload file " + p.toString());
                 WebTarget imageTarget = ocrTarget.path(p.getFileName().toString());

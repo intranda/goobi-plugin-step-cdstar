@@ -54,8 +54,9 @@ public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
             FileDataBodyPart fileDataBodyPart = new FileDataBodyPart("resource", new File(metsfile), MediaType.TEXT_XML_TYPE);
             multiPart.bodyPart(fileDataBodyPart);
             WebTarget fedoraBase = client.target(fedoraUrl);
-            resp = fedoraBase.request("application/json;charset=UTF-8").post(Entity.entity(multiPart, multiPart.getMediaType()),
-                    FedoraIngestInformation.class);
+            resp = fedoraBase.request("application/json;charset=UTF-8")
+                    .post(Entity.entity(multiPart, multiPart.getMediaType()),
+                            FedoraIngestInformation.class);
         } catch (Exception e) {
             log.error(e);
             return PluginReturnValue.ERROR;
@@ -70,7 +71,7 @@ public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
         pidProperty.setProcessId(process.getId());
         pidProperty.setProzess(process);
         pidProperty.setTitel("fedora-pid");
-        pidProperty.setType(PropertyType.general);
+        pidProperty.setType(PropertyType.GENERAL);
         pidProperty.setWert(resp.getPid());
         PropertyManager.saveProcessProperty(pidProperty);
 
@@ -78,7 +79,7 @@ public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
         urlProperty.setProcessId(process.getId());
         urlProperty.setProzess(process);
         urlProperty.setTitel("fedora-url");
-        urlProperty.setType(PropertyType.general);
+        urlProperty.setType(PropertyType.GENERAL);
         urlProperty.setWert(resp.getUrl());
         PropertyManager.saveProcessProperty(urlProperty);
 
@@ -119,8 +120,9 @@ public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
         multiPart.bodyPart(fileDataBodyPart);
         WebTarget fedoraBase = client.target(fedoraUrl);
         //        Response response = fedoraBase.request("application/json;charset=UTF-8").post(Entity.entity(multiPart, multiPart.getMediaType()));
-        FedoraIngestInformation resp = fedoraBase.request("application/json;charset=UTF-8").post(Entity.entity(multiPart, multiPart.getMediaType()),
-                FedoraIngestInformation.class);
+        FedoraIngestInformation resp = fedoraBase.request("application/json;charset=UTF-8")
+                .post(Entity.entity(multiPart, multiPart.getMediaType()),
+                        FedoraIngestInformation.class);
         System.out.println(resp.getPid());
         System.out.println(resp.getUrl());
 
