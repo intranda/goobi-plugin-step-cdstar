@@ -11,7 +11,7 @@
     <dependency>
       <groupId>io.goobi.workflow.plugin</groupId>
       <artifactId>plugin-step-cdstar-lib</artifactId>
-      <version>24.08-SNAPSHOT</version>
+      <version>24.03-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
   </dependencies>
