@@ -29,9 +29,9 @@ import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.persistence.managers.ProcessManager;
 import de.sub.goobi.persistence.managers.PropertyManager;
-import lombok.extern.log4j.Log4j;
+import lombok.extern.log4j.Log4j2;
 
-@Log4j
+@Log4j2
 public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
 
     @Override
@@ -223,24 +223,6 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
                 CloseStepHelper.closeStep(stepToClose, null);
             }
         }
-
-        //        TaskTicket exportTicket = TicketGenerator.generateSimpleTicket("CDStarExport");
-        //
-        //        exportTicket.setProcessId(ticket.getProcessId());
-        //        exportTicket.setProcessName(ticket.getProcessName());
-        //
-        //        exportTicket.setStepId(ticket.getStepId());
-        //        exportTicket.setStepName(ticket.getStepName());
-        //
-        //        exportTicket.setProperties(ticket.getProperties());
-        //        exportTicket.getProperties().put("archiveurl", archiveBase.getUri().toASCIIString());
-        //
-        //        try {
-        //            TicketGenerator.submitTicket(exportTicket, false);
-        //        } catch (JMSException e) {
-        //            log.error(e);
-        //            return PluginReturnValue.ERROR;
-        //        }
 
         return PluginReturnValue.FINISH;
     }

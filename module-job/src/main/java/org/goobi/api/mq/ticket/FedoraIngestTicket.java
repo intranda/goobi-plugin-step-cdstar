@@ -23,9 +23,9 @@ import de.sub.goobi.helper.CloseStepHelper;
 import de.sub.goobi.helper.enums.PropertyType;
 import de.sub.goobi.persistence.managers.ProcessManager;
 import de.sub.goobi.persistence.managers.PropertyManager;
-import lombok.extern.log4j.Log4j;
+import lombok.extern.log4j.Log4j2;
 
-@Log4j
+@Log4j2
 public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
 
     @Override
@@ -44,7 +44,6 @@ public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
         Process process = ProcessManager.getProcessById(processId);
 
         Client client = ClientBuilder.newClient();
-        //        client .register(new BasicAuthenticator(userName, password));
         client.register(MultiPartFeature.class);
 
         client.register(MultiPartFeature.class);

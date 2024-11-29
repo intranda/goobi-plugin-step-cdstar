@@ -2,6 +2,8 @@ package de.intranda.goobi.plugins.export.cdstar;
 
 import java.util.HashMap;
 
+import javax.jms.JMSException;
+
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.goobi.api.mq.QueueType;
 import org.goobi.api.mq.TaskTicket;
@@ -15,13 +17,14 @@ import org.goobi.production.enums.StepReturnValue;
 import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
 
 import de.sub.goobi.config.ConfigPlugins;
-import jakarta.jms.JMSException;
 import lombok.Getter;
 import lombok.Setter;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 
 @PluginImplementation
 public class CDStarExportPlugin implements IStepPluginVersion2 {
+
+    private static final long serialVersionUID = 733853438595946732L;
 
     @Getter
     private String title = "intranda_step_cdstarExport";
@@ -67,7 +70,7 @@ public class CDStarExportPlugin implements IStepPluginVersion2 {
 
     @Override
     public HashMap<String, StepReturnValue> validate() {
-        return null;
+        return null; //NOSONAR
     }
 
     @Override
@@ -105,6 +108,7 @@ public class CDStarExportPlugin implements IStepPluginVersion2 {
         for (Processproperty prop : step.getProzess().getEigenschaften()) {
             if ("archive-id".equals(prop.getTitel())) {
                 archiveName = prop.getWert();
+                break;
             }
         }
 
