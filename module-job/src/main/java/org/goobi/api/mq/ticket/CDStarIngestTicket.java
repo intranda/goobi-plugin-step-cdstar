@@ -69,7 +69,7 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
             processproperty.setType(PropertyType.GENERAL);
             processproperty.setWert(resp.getId());
             PropertyManager.saveProcessProperty(processproperty);
-        } catch (DAOException e) {
+        } catch (Exception e) {
             log.error(e);
         }
 

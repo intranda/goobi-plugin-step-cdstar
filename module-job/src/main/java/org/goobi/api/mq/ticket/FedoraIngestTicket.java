@@ -21,7 +21,6 @@ import org.goobi.production.enums.PluginReturnValue;
 
 import de.sub.goobi.helper.CloseStepHelper;
 import de.sub.goobi.helper.enums.PropertyType;
-import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.persistence.managers.ProcessManager;
 import de.sub.goobi.persistence.managers.PropertyManager;
 import lombok.extern.log4j.Log4j2;
@@ -83,7 +82,7 @@ public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
         try {
             PropertyManager.saveProcessProperty(urlProperty);
             PropertyManager.saveProcessProperty(pidProperty);
-        } catch (DAOException e) {
+        } catch (Exception e) {
             log.error(e);
         }
 
