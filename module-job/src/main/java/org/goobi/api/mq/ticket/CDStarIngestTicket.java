@@ -46,8 +46,6 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
 
         Integer processId = ticket.getProcessId();
 
-        Process process = ProcessManager.getProcessById(processId);
-
         Client client = ClientBuilder.newClient().register(new BasicAuthenticator(userName, password));
 
         WebTarget goobiBase = client.target(url);
@@ -60,15 +58,20 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
 
         // read archive metadata
         WebTarget archiveBase = vaultBase.path(resp.getId());
-
-        // save archive id as property
-        Processproperty processproperty = new Processproperty();
-        processproperty.setProcessId(process.getId());
-        processproperty.setProzess(process);
-        processproperty.setTitel("archive-id");
-        processproperty.setType(PropertyType.GENERAL);
-        processproperty.setWert(resp.getId());
-        PropertyManager.saveProcessProperty(processproperty);
+        Process process = null;
+        try {
+            process = ProcessManager.getProcessById(processId);
+            // save archive id as property
+            Processproperty processproperty = new Processproperty();
+            processproperty.setProcessId(process.getId());
+            processproperty.setProzess(process);
+            processproperty.setTitel("archive-id");
+            processproperty.setType(PropertyType.GENERAL);
+            processproperty.setWert(resp.getId());
+            PropertyManager.saveProcessProperty(processproperty);
+        } catch (DAOException e) {
+            log.error(e);
+        }
 
         // upload master images
         List<Path> masterFiles = null;

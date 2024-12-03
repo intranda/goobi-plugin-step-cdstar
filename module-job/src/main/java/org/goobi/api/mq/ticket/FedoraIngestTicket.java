@@ -21,6 +21,7 @@ import org.goobi.production.enums.PluginReturnValue;
 
 import de.sub.goobi.helper.CloseStepHelper;
 import de.sub.goobi.helper.enums.PropertyType;
+import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.persistence.managers.ProcessManager;
 import de.sub.goobi.persistence.managers.PropertyManager;
 import lombok.extern.log4j.Log4j2;
@@ -41,14 +42,14 @@ public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
 
         Integer processId = ticket.getProcessId();
 
-        Process process = ProcessManager.getProcessById(processId);
-
         Client client = ClientBuilder.newClient();
         client.register(MultiPartFeature.class);
 
         client.register(MultiPartFeature.class);
         FedoraIngestInformation resp = null;
+        Process process = null;
         try {
+            process = ProcessManager.getProcessById(processId);
             FormDataMultiPart multiPart = new FormDataMultiPart();
             FileDataBodyPart fileDataBodyPart = new FileDataBodyPart("resource", new File(metsfile), MediaType.TEXT_XML_TYPE);
             multiPart.bodyPart(fileDataBodyPart);
@@ -72,7 +73,6 @@ public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
         pidProperty.setTitel("fedora-pid");
         pidProperty.setType(PropertyType.GENERAL);
         pidProperty.setWert(resp.getPid());
-        PropertyManager.saveProcessProperty(pidProperty);
 
         Processproperty urlProperty = new Processproperty();
         urlProperty.setProcessId(process.getId());
@@ -80,7 +80,12 @@ public class FedoraIngestTicket implements TicketHandler<PluginReturnValue> {
         urlProperty.setTitel("fedora-url");
         urlProperty.setType(PropertyType.GENERAL);
         urlProperty.setWert(resp.getUrl());
-        PropertyManager.saveProcessProperty(urlProperty);
+        try {
+            PropertyManager.saveProcessProperty(urlProperty);
+            PropertyManager.saveProcessProperty(pidProperty);
+        } catch (DAOException e) {
+            log.error(e);
+        }
 
         log.debug("saved properties");
 

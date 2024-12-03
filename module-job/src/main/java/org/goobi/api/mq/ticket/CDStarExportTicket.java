@@ -79,50 +79,49 @@ public class CDStarExportTicket extends ExportDms implements TicketHandler<Plugi
                 position = position + 1000;
             }
         }
-
-        // export process
-        Process process = ProcessManager.getProcessById(ticket.getProcessId());
-
-        Project project = process.getProjekt();
-        String exportFolder = project.getDmsImportRootPath();
-        project.setDmsImportRootPath(exportFolder);
-        project.setDmsImportCreateProcessFolder(true);
-
         try {
+            // export process
+            Process process = ProcessManager.getProcessById(ticket.getProcessId());
+
+            Project project = process.getProjekt();
+            String exportFolder = project.getDmsImportRootPath();
+            project.setDmsImportRootPath(exportFolder);
+            project.setDmsImportCreateProcessFolder(true);
+
             exportWithImages = false;
             startExport(process, exportFolder);
+
+            Path metsFile = null;
+            if (project.isDmsImportCreateProcessFolder()) {
+                metsFile = Paths.get(exportFolder, process.getTitel(), process.getTitel() + ".xml");
+            } else {
+                metsFile = Paths.get(exportFolder, process.getTitel() + ".xml");
+            }
+
+            // read exported file and create/overwrite filegroup for cdstar
+            if (createAdditionalFileGroups(archiveurl, data, metsFile.toString())) {
+                // close step
+                String closeStepValue = ticket.getProperties().get("closeStep");
+
+                if (StringUtils.isNotBlank(closeStepValue) && "true".equals(closeStepValue)) {
+                    Step stepToClose = null;
+
+                    for (Step processStep : process.getSchritte()) {
+                        if (processStep.getTitel().equals(ticket.getStepName())) {
+                            stepToClose = processStep;
+                            break;
+                        }
+                    }
+                    if (stepToClose != null) {
+                        CloseStepHelper.closeStep(stepToClose, null);
+                    }
+                }
+            }
         } catch (WriteException | PreferencesException | DocStructHasNoTypeException | MetadataTypeNotAllowedException
                 | TypeNotAllowedForParentException | IOException | InterruptedException | ExportFileException | UghHelperException | SwapException
                 | DAOException e) {
             log.error(e);
             return PluginReturnValue.ERROR;
-        }
-
-        Path metsFile = null;
-        if (project.isDmsImportCreateProcessFolder()) {
-            metsFile = Paths.get(exportFolder, process.getTitel(), process.getTitel() + ".xml");
-        } else {
-            metsFile = Paths.get(exportFolder, process.getTitel() + ".xml");
-        }
-
-        // read exported file and create/overwrite filegroup for cdstar
-        if (createAdditionalFileGroups(archiveurl, data, metsFile.toString())) {
-            // close step
-            String closeStepValue = ticket.getProperties().get("closeStep");
-
-            if (StringUtils.isNotBlank(closeStepValue) && "true".equals(closeStepValue)) {
-                Step stepToClose = null;
-
-                for (Step processStep : process.getSchritte()) {
-                    if (processStep.getTitel().equals(ticket.getStepName())) {
-                        stepToClose = processStep;
-                        break;
-                    }
-                }
-                if (stepToClose != null) {
-                    CloseStepHelper.closeStep(stepToClose, null);
-                }
-            }
         }
 
         return PluginReturnValue.FINISH;
