@@ -24,6 +24,8 @@ import net.xeoh.plugins.base.annotations.PluginImplementation;
 @PluginImplementation
 public class FedoraIngestPlugin implements IStepPluginVersion2 {
 
+    private static final long serialVersionUID = -4980583981253950557L;
+
     @Getter
     private String title = "intranda_step_fedoraIngest";
 
@@ -69,7 +71,7 @@ public class FedoraIngestPlugin implements IStepPluginVersion2 {
 
     @Override
     public HashMap<String, StepReturnValue> validate() {
-        return null;
+        return null;//NOSONAR
     }
 
     @Override
@@ -89,16 +91,6 @@ public class FedoraIngestPlugin implements IStepPluginVersion2 {
         exportTicket.setStepName(step.getTitel());
 
         SubnodeConfiguration xmlConfig = ConfigPlugins.getProjectAndStepConfig("intranda_step_cdstarIngest", step);
-        //        String cdstarUrl = xmlConfig.getString("url");
-        //        String vault = xmlConfig.getString("vault");
-        //        String user = xmlConfig.getString("user");
-        //        String password = xmlConfig.getString("password");
-        //
-        //        exportTicket.getProperties().put("userName", user);
-        //        exportTicket.getProperties().put("password", password);
-        //
-        //        exportTicket.getProperties().put("url", cdstarUrl);
-        //        exportTicket.getProperties().put("vault", vault);
 
         String fedoraUrl = xmlConfig.getString("fedoraUrl");
         exportTicket.getProperties().put("fedoraUrl", fedoraUrl);

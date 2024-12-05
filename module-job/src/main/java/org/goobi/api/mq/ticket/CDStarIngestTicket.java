@@ -29,9 +29,9 @@ import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.persistence.managers.ProcessManager;
 import de.sub.goobi.persistence.managers.PropertyManager;
-import lombok.extern.log4j.Log4j;
+import lombok.extern.log4j.Log4j2;
 
-@Log4j
+@Log4j2
 public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
 
     @Override
@@ -46,8 +46,6 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
 
         Integer processId = ticket.getProcessId();
 
-        Process process = ProcessManager.getProcessById(processId);
-
         Client client = ClientBuilder.newClient().register(new BasicAuthenticator(userName, password));
 
         WebTarget goobiBase = client.target(url);
@@ -60,15 +58,20 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
 
         // read archive metadata
         WebTarget archiveBase = vaultBase.path(resp.getId());
-
-        // save archive id as property
-        Processproperty processproperty = new Processproperty();
-        processproperty.setProcessId(process.getId());
-        processproperty.setProzess(process);
-        processproperty.setTitel("archive-id");
-        processproperty.setType(PropertyType.GENERAL);
-        processproperty.setWert(resp.getId());
-        PropertyManager.saveProcessProperty(processproperty);
+        Process process = null;
+        try {
+            process = ProcessManager.getProcessById(processId);
+            // save archive id as property
+            Processproperty processproperty = new Processproperty();
+            processproperty.setProcessId(process.getId());
+            processproperty.setProzess(process);
+            processproperty.setTitel("archive-id");
+            processproperty.setType(PropertyType.GENERAL);
+            processproperty.setWert(resp.getId());
+            PropertyManager.saveProcessProperty(processproperty);
+        } catch (Exception e) {
+            log.error(e);
+        }
 
         // upload master images
         List<Path> masterFiles = null;
@@ -223,24 +226,6 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
                 CloseStepHelper.closeStep(stepToClose, null);
             }
         }
-
-        //        TaskTicket exportTicket = TicketGenerator.generateSimpleTicket("CDStarExport");
-        //
-        //        exportTicket.setProcessId(ticket.getProcessId());
-        //        exportTicket.setProcessName(ticket.getProcessName());
-        //
-        //        exportTicket.setStepId(ticket.getStepId());
-        //        exportTicket.setStepName(ticket.getStepName());
-        //
-        //        exportTicket.setProperties(ticket.getProperties());
-        //        exportTicket.getProperties().put("archiveurl", archiveBase.getUri().toASCIIString());
-        //
-        //        try {
-        //            TicketGenerator.submitTicket(exportTicket, false);
-        //        } catch (JMSException e) {
-        //            log.error(e);
-        //            return PluginReturnValue.ERROR;
-        //        }
 
         return PluginReturnValue.FINISH;
     }
