@@ -6,6 +6,7 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 import org.goobi.api.mq.QueueType;
 import org.goobi.api.mq.TaskTicket;
 import org.goobi.api.mq.TicketGenerator;
+import org.goobi.beans.GoobiProperty;
 import org.goobi.beans.Processproperty;
 import org.goobi.beans.Step;
 import org.goobi.production.enums.PluginGuiType;
@@ -104,7 +105,7 @@ public class CDStarExportPlugin implements IStepPluginVersion2 {
         exportTicket.getProperties().put("closeStep", "true");
 
         String archiveName = "";
-        for (Processproperty prop : step.getProzess().getEigenschaften()) {
+        for (GoobiProperty prop : step.getProzess().getEigenschaften()) {
             if ("archive-id".equals(prop.getTitel())) {
                 archiveName = prop.getWert();
                 break;
