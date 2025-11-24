@@ -8,17 +8,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
-
 import org.apache.commons.lang.StringUtils;
 import org.goobi.api.mq.TaskTicket;
 import org.goobi.api.mq.TicketHandler;
+import org.goobi.beans.GoobiProperty;
+import org.goobi.beans.GoobiProperty.PropertyOwnerType;
 import org.goobi.beans.Process;
-import org.goobi.beans.Processproperty;
 import org.goobi.beans.Step;
 import org.goobi.production.enums.PluginReturnValue;
 
@@ -29,10 +24,18 @@ import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.persistence.managers.ProcessManager;
 import de.sub.goobi.persistence.managers.PropertyManager;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
+
+    // API documentation: https://cdstar.gwdg.de/docs/dev/
 
     @Override
     public PluginReturnValue call(TaskTicket ticket) {
@@ -51,26 +54,64 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
         WebTarget goobiBase = client.target(url);
         WebTarget vaultBase = goobiBase.path(vault);
 
-        // create new archive
-        ArchiveInformation resp = vaultBase.request(MediaType.APPLICATION_JSON).post(null, ArchiveInformation.class);
-
-        log.info("created archive " + resp.getId());
-
-        // read archive metadata
-        WebTarget archiveBase = vaultBase.path(resp.getId());
+        // check if property/metadata for archive-id already exists
+        // if yes: re-use, update existing ingest
+        // if not: new archive, store id as property/metadata
         Process process = null;
         try {
             process = ProcessManager.getProcessById(processId);
-            // save archive id as property
-            Processproperty processproperty = new Processproperty();
-            processproperty.setProcessId(process.getId());
-            processproperty.setProzess(process);
-            processproperty.setTitel("archive-id");
-            processproperty.setType(PropertyType.GENERAL);
-            processproperty.setWert(resp.getId());
-            PropertyManager.saveProcessProperty(processproperty);
         } catch (Exception e) {
             log.error(e);
+        }
+        if (process == null) {
+            // this can only happen, if the process gets deleted while in queue
+            return PluginReturnValue.ERROR;
+        }
+        // save archive id as property
+        // TODO #27304 save as metadata value instead
+
+        GoobiProperty processproperty = null;
+        for (GoobiProperty prop : process.getEigenschaften()) {
+            if ("archive-id".equals(prop.getPropertyName())) {
+                processproperty = prop;
+                break;
+            }
+        }
+        WebTarget archiveBase = null;
+
+        boolean archiveExists = false;
+
+        if (processproperty != null) {
+            // check if archive id is still valid
+            Response resp = vaultBase.path(processproperty.getPropertyValue()).request().get();
+            int statusCode = resp.getStatus();
+            // 20x, 30x are valid
+            archiveExists = statusCode > 400;
+        } else {
+            // create property
+            processproperty = new GoobiProperty(PropertyOwnerType.PROCESS);
+            processproperty.setObjectId(process.getId());
+            processproperty.setOwner(process);
+            processproperty.setPropertyName("archive-id");
+            processproperty.setType(PropertyType.GENERAL);
+        }
+
+        if (!archiveExists) {
+            // first ingest
+
+            // create new archive
+            ArchiveInformation resp = vaultBase.request(MediaType.APPLICATION_JSON).post(null, ArchiveInformation.class);
+            log.info("created archive " + resp.getId());
+
+            // read archive metadata
+            archiveBase = vaultBase.path(resp.getId());
+
+            //store id
+            processproperty.setPropertyValue(resp.getId());
+            PropertyManager.saveProperty(processproperty);
+        } else {
+            // update existing ingest
+            archiveBase = vaultBase.path(processproperty.getPropertyValue());
         }
 
         // upload master images
@@ -84,22 +125,10 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
 
         WebTarget masterTarget = archiveBase.path("" + processId).path("master");
 
-        for (Path p : masterFiles) {
-            log.debug("upload file " + p.toString());
-            WebTarget imageTarget = masterTarget.path(p.getFileName().toString());
-
-            InputStream imageFile;
-            try {
-                imageFile = new FileInputStream(p.toFile());
-
-                String mimeType = Files.probeContentType(p);
-
-                imageTarget.request(MediaType.APPLICATION_JSON).put(Entity.entity(imageFile, mimeType), FileInformation.class);
-
-            } catch (IOException e) {
-                log.error(e);
-                return PluginReturnValue.ERROR;
-            }
+        try {
+            uploadFile(masterFiles, masterTarget);
+        } catch (IOException e) {
+            log.error(e);
         }
 
         // upload derivate images
@@ -113,22 +142,10 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
 
         WebTarget derivateTarget = archiveBase.path("" + processId).path("derivate");
 
-        for (Path p : derivateFiles) {
-            log.debug("upload file " + p.toString());
-            WebTarget imageTarget = derivateTarget.path(p.getFileName().toString());
-
-            InputStream imageFile;
-            try {
-                imageFile = new FileInputStream(p.toFile());
-
-                String mimeType = Files.probeContentType(p);
-
-                imageTarget.request(MediaType.APPLICATION_JSON).put(Entity.entity(imageFile, mimeType), FileInformation.class);
-
-            } catch (IOException e) {
-                log.error(e);
-                return PluginReturnValue.ERROR;
-            }
+        try {
+            uploadFile(derivateFiles, derivateTarget);
+        } catch (IOException e) {
+            log.error(e);
         }
 
         List<Path> ocrTxtFiles = null;
@@ -152,64 +169,24 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
 
         WebTarget ocrTarget = archiveBase.path("" + processId).path("ocr");
 
-        if (ocrTxtFiles != null) {
-            for (Path p : ocrTxtFiles) {
-                log.debug("upload file " + p.toString());
-                WebTarget imageTarget = ocrTarget.path(p.getFileName().toString());
-
-                InputStream imageFile;
-                try {
-                    imageFile = new FileInputStream(p.toFile());
-
-                    String mimeType = Files.probeContentType(p);
-
-                    imageTarget.request(MediaType.APPLICATION_JSON).put(Entity.entity(imageFile, mimeType), FileInformation.class);
-
-                } catch (IOException e) {
-                    log.error(e);
-                    return PluginReturnValue.ERROR;
-                }
+        try {
+            if (ocrTxtFiles != null) {
+                uploadFile(ocrTxtFiles, ocrTarget);
             }
-        }
-        if (ocrAltoFiles != null) {
-            for (Path p : ocrAltoFiles) {
-                log.debug("upload file " + p.toString());
-                WebTarget imageTarget = ocrTarget.path(p.getFileName().toString());
-
-                InputStream imageFile;
-                try {
-                    imageFile = new FileInputStream(p.toFile());
-
-                    String mimeType = Files.probeContentType(p);
-
-                    imageTarget.request(MediaType.APPLICATION_JSON).put(Entity.entity(imageFile, mimeType), FileInformation.class);
-
-                } catch (IOException e) {
-                    log.error(e);
-                    return PluginReturnValue.ERROR;
-                }
+            if (ocrAltoFiles != null) {
+                uploadFile(ocrAltoFiles, ocrTarget);
             }
+
+            if (ocrPdfFiles != null) {
+                uploadFile(ocrPdfFiles, ocrTarget);
+            }
+        } catch (IOException e) {
+            log.error(e);
         }
 
-        if (ocrPdfFiles != null) {
-            for (Path p : ocrPdfFiles) {
-                log.debug("upload file " + p.toString());
-                WebTarget imageTarget = ocrTarget.path(p.getFileName().toString());
+        // TODO #27305 add external mets file
 
-                InputStream imageFile;
-                try {
-                    imageFile = new FileInputStream(p.toFile());
-
-                    String mimeType = Files.probeContentType(p);
-
-                    imageTarget.request(MediaType.APPLICATION_JSON).put(Entity.entity(imageFile, mimeType), FileInformation.class);
-
-                } catch (IOException e) {
-                    log.error(e);
-                    return PluginReturnValue.ERROR;
-                }
-            }
-        }
+        // TODO #27306 add metadata to archive
 
         String closeStepValue = ticket.getProperties().get("closeStep");
 
@@ -228,6 +205,19 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
         }
 
         return PluginReturnValue.FINISH;
+    }
+
+    public void uploadFile(List<Path> files, WebTarget targetBase) throws IOException {
+        for (Path p : files) {
+            log.debug("upload file " + p.toString());
+            WebTarget imageTarget = targetBase.path(p.getFileName().toString());
+
+            try (InputStream imageFile = new FileInputStream(p.toFile())) {
+                String mimeType = Files.probeContentType(p);
+                imageTarget.request(MediaType.APPLICATION_JSON).put(Entity.entity(imageFile, mimeType), FileInformation.class);
+            }
+
+        }
     }
 
     @Override
