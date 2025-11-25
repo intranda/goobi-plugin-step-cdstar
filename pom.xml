@@ -7,9 +7,7 @@
     <version>25.11-SNAPSHOT</version>
     <relativePath/>
   </parent>
-  <properties>
-    <maven.compiler.release>11</maven.compiler.release>
-  </properties>
+
   <groupId>io.goobi.workflow.plugin</groupId>
   <artifactId>plugin-step-cdstar</artifactId>
   <packaging>pom</packaging>

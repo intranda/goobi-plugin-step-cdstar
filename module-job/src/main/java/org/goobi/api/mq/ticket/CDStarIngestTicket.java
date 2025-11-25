@@ -26,11 +26,16 @@ import de.sub.goobi.persistence.managers.ProcessManager;
 import de.sub.goobi.persistence.managers.PropertyManager;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import lombok.extern.log4j.Log4j2;
+import ugh.dl.DocStruct;
+import ugh.dl.Fileformat;
+import ugh.exceptions.UGHException;
 
 @Log4j2
 public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
@@ -49,7 +54,17 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
 
         Integer processId = ticket.getProcessId();
 
-        Client client = ClientBuilder.newClient().register(new BasicAuthenticator(userName, password));
+        Client client = ClientBuilder.newClient()
+                .register(new ClientRequestFilter() {
+                    @Override
+                    public void filter(ClientRequestContext ctx) {
+                        String uri = ctx.getUri().toString();
+                        // replace queryparam ?param= with ?param
+                        uri = uri.replaceAll("=(&|$)", "$1");
+                        ctx.setUri(java.net.URI.create(uri));
+                    }
+                })
+                .register(new BasicAuthenticator(userName, password));
 
         WebTarget goobiBase = client.target(url);
         WebTarget vaultBase = goobiBase.path(vault);
@@ -67,6 +82,23 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
             // this can only happen, if the process gets deleted while in queue
             return PluginReturnValue.ERROR;
         }
+
+        // read metadata file
+        DocStruct anchor = null;
+        DocStruct logical = null;
+
+        try {
+            Fileformat fileformat = process.readMetadataFile();
+            logical = fileformat.getDigitalDocument().getLogicalDocStruct();
+            if (logical.getType().isAnchor()) {
+                anchor = logical;
+                logical = logical.getAllChildren().get(0);
+            }
+        } catch (UGHException | IOException | SwapException e) {
+            log.error(e);
+            return PluginReturnValue.ERROR;
+        }
+
         // save archive id as property
         // TODO #27304 save as metadata value instead
 
@@ -86,7 +118,7 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
             Response resp = vaultBase.path(processproperty.getPropertyValue()).request().get();
             int statusCode = resp.getStatus();
             // 20x, 30x are valid
-            archiveExists = statusCode > 400;
+            archiveExists = statusCode < 400;
         } else {
             // create property
             processproperty = new GoobiProperty(PropertyOwnerType.PROCESS);
@@ -184,27 +216,41 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
             log.error(e);
         }
 
-        // TODO #27305 add external mets file
+        //TODO #27305 add external mets file to cdstar archive
 
-        // TODO #27306 add metadata to archive
-
-        String closeStepValue = ticket.getProperties().get("closeStep");
-
-        if (StringUtils.isNotBlank(closeStepValue) && "true".equals(closeStepValue)) {
-            Step stepToClose = null;
-
-            for (Step processStep : process.getSchritte()) {
-                if (processStep.getTitel().equals(ticket.getStepName())) {
-                    stepToClose = processStep;
-                    break;
-                }
-            }
-            if (stepToClose != null) {
-                CloseStepHelper.closeStep(stepToClose, null);
-            }
+        // #27306 add metadata to archive
+        MetaAttributes attrs = new MetaAttributes();
+        attrs.addMetadata(logical);
+        if (anchor != null) {
+            attrs.addMetadata(anchor);
         }
 
-        return PluginReturnValue.FINISH;
+        Response resp = archiveBase.queryParam("meta", "")
+                .request(MediaType.APPLICATION_JSON)
+                .put(Entity.entity(attrs, MediaType.APPLICATION_JSON));
+        if (resp.getStatus() < 400) {
+
+            String closeStepValue = ticket.getProperties().get("closeStep");
+
+            if (StringUtils.isNotBlank(closeStepValue) && "true".equals(closeStepValue)) {
+                Step stepToClose = null;
+
+                for (Step processStep : process.getSchritte()) {
+                    if (processStep.getTitel().equals(ticket.getStepName())) {
+                        stepToClose = processStep;
+                        break;
+                    }
+                }
+                if (stepToClose != null) {
+                    CloseStepHelper.closeStep(stepToClose, null);
+                }
+            }
+            return PluginReturnValue.FINISH;
+        } else {
+            // metadata ingest/update was not successful
+            return PluginReturnValue.ERROR;
+        }
+
     }
 
     public void uploadFile(List<Path> files, WebTarget targetBase) throws IOException {
