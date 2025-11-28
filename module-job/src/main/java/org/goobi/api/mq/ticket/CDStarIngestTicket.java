@@ -17,11 +17,15 @@ import org.goobi.beans.Process;
 import org.goobi.beans.Step;
 import org.goobi.production.enums.PluginReturnValue;
 
+import de.sub.goobi.config.ConfigurationHelper;
+import de.sub.goobi.export.download.ExportMets;
 import de.sub.goobi.helper.CloseStepHelper;
 import de.sub.goobi.helper.StorageProvider;
 import de.sub.goobi.helper.enums.PropertyType;
 import de.sub.goobi.helper.exceptions.DAOException;
+import de.sub.goobi.helper.exceptions.ExportFileException;
 import de.sub.goobi.helper.exceptions.SwapException;
+import de.sub.goobi.helper.exceptions.UghHelperException;
 import de.sub.goobi.persistence.managers.ProcessManager;
 import de.sub.goobi.persistence.managers.PropertyManager;
 import jakarta.ws.rs.client.Client;
@@ -35,6 +39,7 @@ import jakarta.ws.rs.core.Response;
 import lombok.extern.log4j.Log4j2;
 import ugh.dl.DocStruct;
 import ugh.dl.Fileformat;
+import ugh.exceptions.DocStructHasNoTypeException;
 import ugh.exceptions.UGHException;
 
 @Log4j2
@@ -216,7 +221,13 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
             log.error(e);
         }
 
-        //TODO #27305 add external mets file to cdstar archive
+        // #27305 add external mets file to cdstar archive
+        try {
+            createMetsFile(ticket, process, archiveBase);
+        } catch (IOException e) {
+            log.error(e);
+            return PluginReturnValue.ERROR;
+        }
 
         // #27306 add metadata to archive
         MetaAttributes attrs = new MetaAttributes();
@@ -251,6 +262,39 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
             return PluginReturnValue.ERROR;
         }
 
+    }
+
+    public void createMetsFile(TaskTicket ticket, Process process, WebTarget archiveBase) throws IOException {
+        // export mets file(s) into temporary folder
+        Path metsFile = Paths.get(ConfigurationHelper.getInstance().getTemporaryFolder(), process.getTitel() + "_mets.xml");
+        try {
+            ExportMets exp = new ExportMets();
+            exp.startExport(process, metsFile.getParent().toString() + "/");
+        } catch (UGHException | DocStructHasNoTypeException | InterruptedException | ExportFileException | UghHelperException
+                | SwapException | DAOException e) {
+            log.error(e);
+        }
+        // ingest mets file
+        WebTarget metsTarget = archiveBase.path("" + ticket.getProcessId()).path("mets").path("mets.xml");
+        try (InputStream inputStream = new FileInputStream(metsFile.toFile())) {
+            metsTarget.request(MediaType.APPLICATION_JSON).put(Entity.entity(inputStream, "application/xml"), FileInformation.class);
+        }
+
+        // ingest anchor file
+        Path anchorFile = Paths.get(metsFile.getParent().toString(), metsFile.getFileName().toString().replace(".xml", "_anchor.xml"));
+        if (StorageProvider.getInstance().isFileExists(anchorFile)) {
+            WebTarget anchorTarget = archiveBase.path("" + ticket.getProcessId()).path("mets").path("anchor.xml");
+            try (InputStream inputStream = new FileInputStream(anchorFile.toFile())) {
+                anchorTarget.request(MediaType.APPLICATION_JSON).put(Entity.entity(inputStream, "application/xml"), FileInformation.class);
+            }
+        }
+        // remove temp files
+        if (StorageProvider.getInstance().isFileExists(anchorFile)) {
+            StorageProvider.getInstance().deleteFile(anchorFile);
+        }
+        if (StorageProvider.getInstance().isFileExists(metsFile)) {
+            StorageProvider.getInstance().deleteFile(metsFile);
+        }
     }
 
     public void uploadFile(List<Path> files, WebTarget targetBase) throws IOException {
