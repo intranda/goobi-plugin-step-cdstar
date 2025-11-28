@@ -4,12 +4,9 @@
   <parent>
     <groupId>io.goobi.workflow</groupId>
     <artifactId>workflow-base</artifactId>
-    <version>25.10.2</version>
+    <version>25.11</version>
     <relativePath/>
   </parent>
-  <properties>
-    <maven.compiler.release>11</maven.compiler.release>
-  </properties>
   <groupId>io.goobi.workflow.plugin</groupId>
   <artifactId>plugin-step-cdstar</artifactId>
   <packaging>pom</packaging>
@@ -28,7 +25,7 @@
     <dependency>
       <groupId>io.goobi.workflow</groupId>
       <artifactId>workflow-core</artifactId>
-      <version>25.10.2</version>
+      <version>25.11</version>
       <classifier>classes</classifier>
     </dependency>
   </dependencies>

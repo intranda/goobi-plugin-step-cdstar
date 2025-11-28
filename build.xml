@@ -1,0 +1,10 @@
+<project name="goobi-plugin-step-cdstar-base" default="devbuild">
+	<target name="devbuild">
+		<exec executable="mvn">
+			<arg value="package"/>
+		</exec>
+		<copy file="module-base/target/plugin-step-cdstar-base.jar" todir="/opt/digiverso/goobi/plugins/step/"/>
+		<copy file="module-job/target/plugin-step-cdstar-job.jar" todir="/opt/digiverso/goobi/plugins/GUI/"/>
+		<copy file="module-lib/target/plugin-step-cdstar-lib.jar" todir="/opt/digiverso/goobi/plugins/GUI/"/>
+	</target>
+</project>
