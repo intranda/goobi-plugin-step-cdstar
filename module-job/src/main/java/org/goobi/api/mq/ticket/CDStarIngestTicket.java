@@ -116,17 +116,6 @@ public class CDStarIngestTicket implements TicketHandler<PluginReturnValue> {
             }
         }
 
-        if (cdstarId == null) {
-            Prefs prefs = process.getRegelsatz().getPreferences();
-
-            try {
-                cdstarId = new Metadata(prefs.getMetadataTypeByName("CDStarID"));
-                logical.addMetadata(cdstarId);
-            } catch (MetadataTypeNotAllowedException e) {
-                log.error(e);
-            }
-        }
-
         // save archive id as property
         // TODO #27304 save as metadata value instead
 
